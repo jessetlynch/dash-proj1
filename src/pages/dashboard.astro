@@ -8,6 +8,16 @@ import type { PitchingProspect, HittingProspect } from '../types/baseball';
 
 const prospects = await getCachedYankeesProspects();
 
+// Client-side sorting and filtering
+const sortData = (data: any[], field: string, direction: 'asc' | 'desc') => {
+  return [...data].sort((a, b) => {
+    if (direction === 'asc') {
+      return a[field] > b[field] ? 1 : -1;
+    }
+    return a[field] < b[field] ? 1 : -1;
+  });
+};
+
 // Calculate stats
 const stats = {
   totalTop100: prospects.filter(p => p.rank && p.rank <= 100).length,
@@ -52,9 +62,82 @@ const levelString = averageLevel > 2 ? 'AAA' : averageLevel > 1 ? 'AA' : 'A+';
 ---
 
 <Layout title="Yankees Prospects Dashboard">
+  <script>
+    // Client-side sorting functionality
+    function setupSorting() {
+      const tables = document.querySelectorAll('table');
+      tables.forEach(table => {
+        const headers = table.querySelectorAll('th');
+        headers.forEach((header, index) => {
+          if (header.classList.contains('sortable')) {
+            header.addEventListener('click', () => {
+              const direction = header.classList.contains('asc') ? 'desc' : 'asc';
+              headers.forEach(h => h.classList.remove('asc', 'desc'));
+              header.classList.add(direction);
+              
+              const rows = Array.from(table.querySelectorAll('tbody tr'));
+              const sortedRows = rows.sort((a, b) => {
+                const aVal = a.children[index].textContent || '';
+                const bVal = b.children[index].textContent || '';
+                return direction === 'asc' 
+                  ? aVal.localeCompare(bVal, undefined, {numeric: true})
+                  : bVal.localeCompare(aVal, undefined, {numeric: true});
+              });
+              
+              const tbody = table.querySelector('tbody');
+              if (!tbody) return;
+              tbody.innerHTML = '';
+              sortedRows.forEach(row => tbody.appendChild(row));
+            });
+          }
+        });
+      });
+    }
+
+    // Initialize sorting
+    document.addEventListener('DOMContentLoaded', setupSorting);
+
+    function filterTables(query: string) {
+      const tables = document.querySelectorAll('table');
+      tables.forEach(table => {
+        const rows = table.querySelectorAll('tbody tr');
+        rows.forEach(row => {
+          const text = (row.textContent || '').toLowerCase();
+          const match = text.includes(query.toLowerCase());
+          (row as HTMLElement).style.display = match ? '' : 'none';
+        });
+      });
+    }
+  </script>
+
+  <style>
+    .sortable {
+      cursor: pointer;
+      position: relative;
+    }
+    .sortable:hover {
+      background-color: #f3f4f6;
+    }
+    .sortable::after {
+      content: '↕';
+      position: absolute;
+      right: 8px;
+      opacity: 0.3;
+    }
+    .sortable.asc::after {
+      content: '↑';
+      opacity: 1;
+    }
+    .sortable.desc::after {
+      content: '↓';
+      opacity: 1;
+    }
+  </style>
+
   <main class="yankees-bg min-h-screen">
     <div class="container mx-auto px-4 py-8">
       <h1 class="text-4xl font-bold mb-8 text-blue-900">Yankees Prospects Dashboard</h1>
+      <p class="text-sm text-gray-600 mb-6">* Stats shown are from 2024 season. Spring Training 2025 in progress.</p>
       
       <!-- Team Overview Cards -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -114,6 +197,8 @@ const levelString = averageLevel > 2 ? 'AAA' : averageLevel > 1 ? 'AA' : 'A+';
         </div>
       </div>
 
+    
+
       <!-- Top Pitchers Table -->
       <div class="bg-white rounded-lg shadow-md p-6 mb-8">
         <h2 class="text-2xl font-bold mb-4 text-blue-900">Top Pitchers</h2>
@@ -121,13 +206,13 @@ const levelString = averageLevel > 2 ? 'AAA' : averageLevel > 1 ? 'AA' : 'A+';
           <table class="w-full">
             <thead>
               <tr class="bg-gray-50">
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Player</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Level</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ERA</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SO</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">WHIP</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">W</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable">Player</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable">Current Level</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable">ERA</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable">IP</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable">SO</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable">WHIP</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable">W</th>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
@@ -156,14 +241,14 @@ const levelString = averageLevel > 2 ? 'AAA' : averageLevel > 1 ? 'AA' : 'A+';
           <table class="w-full">
             <thead>
               <tr class="bg-gray-50">
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Player</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Level</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">AVG</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">OBP</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SLG</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">OPS</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">HR</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">RBI</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable">Player</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable">Current Level</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable">AVG</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable">OBP</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable">SLG</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable">OPS</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable">HR</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable">RBI</th>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
