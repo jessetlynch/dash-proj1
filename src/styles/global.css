@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+/* Dashboard specific styles */
+.dashboard-card {
+	transition: transform 0.2s ease-in-out;
+}
+
+.dashboard-card:hover {
+	transform: translateY(-2px);
+}
+
+/* Add some custom colors for the dashboard */
+:root {
+	--baseball-red: #bf0d3e;
+	--baseball-blue: #041e42;
+	--yankees-gray: #e6e6e6;
+	--yankees-navy: #003087;
+}
+
+/* Yankees pinstripes background */
+.yankees-bg {
+	background-color: white;
+	background-image: repeating-linear-gradient(
+		90deg,
+		var(--yankees-navy) 0px,
+		var(--yankees-navy) 1px,
+		transparent 1px,
+		transparent 20px
+	);
+	background-size: 20px 100%;
+	position: relative;
+}
+
+/* Add an overlay to make the stripes more subtle */
+.yankees-bg::before {
+	content: "";
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(255, 255, 255, 0.92);
+	z-index: 0;
+}
+
+/* Ensure content stays above the overlay */
+.yankees-bg > * {
+	position: relative;
+	z-index: 1;
+}
